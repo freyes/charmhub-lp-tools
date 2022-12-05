@@ -9,6 +9,7 @@ import sys
 
 from datetime import datetime
 from typing import (
+    Dict,
     List,
     Optional,
     Union,
@@ -220,18 +221,27 @@ class BaseCharmhubReport(BaseReport):
                 )
             )
         )
+        self.architectures = set()
+        self.bases = set()
 
     def add_revision(
             self,
             channel: CharmChannel,
-            revision: int,
+            channel_def: Dict,
     ):
         """Add new revision to the report."""
         pg = channel.project.project_group
         name = channel.project.charmhub_name
         self.log.debug('Adding revision to list: [%s] %s (%s): %s',
-                       pg, name, channel.name, revision)
-        self.revisions[pg][channel.track][name][channel.risk].append(revision)
+                       pg, name, channel.name, channel_def)
+        if channel_def:
+            self.architectures.add(
+                channel_def['channel']['base']['architecture']
+            )
+            self.bases.add(channel_def['channel']['base']['channel'])
+        self.revisions[pg][channel.track][name][channel.risk].append(
+            channel_def
+        )
 
     @abc.abstractmethod
     def generate(self):
@@ -248,12 +258,16 @@ class HtmlCharmhubReport(BaseCharmhubReport):
         os.makedirs(self.output, exist_ok=True)
         env = self._get_jinja2_env()
         template = env.get_template('charms_per_track.html.j2')
+        tracks_index = {pg: tracks for pg, tracks in self.revisions.items()}
         for project_group, tracks in self.revisions.items():
             for track, charms in tracks.items():
                 content = template.stream({'charms': charms,
                                            'track': track,
+                                           'tracks_index': tracks_index,
                                            'project_group': project_group,
                                            'NOW': NOW,
+                                           'architectures': self.architectures,
+                                           'bases': self.bases,
                                            })
                 fname = f'{project_group}-{track}.html'
                 fpath = os.path.join(self.output, fname)

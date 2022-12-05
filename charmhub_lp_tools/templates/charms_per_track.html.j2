@@ -1,13 +1,49 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Charmed OpenStack Releases</title>
+  <title>{{ project_group }} {{ track }} - Charmed OpenStack Releases</title>
   <link rel="stylesheet" href="https://assets.ubuntu.com/v1/vanilla-framework-version-3.8.1.min.css" />
+  <link rel="preload" href="https://code.jquery.com/jquery-3.6.1.min.js" as="script">
+  <script type="text/javascript" src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
 </head>
 <body>
   <div class="l-site">
+    {% include 'charms_per_track_header.html.j2' %}
     <div class="u-fixed-width">
-      <table aria-label="Vanilla framework table example">
+      <h3>{{ project_group }} {{ track }}</h3>
+      <form>
+      <div>
+        Bases:
+        {%- for base in bases %}
+          {% set base_ = base|replace('.', '-') %}
+          <label class="p-checkbox--inline">
+            <input type="checkbox" id="{{ base_ }}" name="{{ base_ }}-filter" value="{{ base_ }}" aria-labelledby="label-{{ base_ }}" class="p-checkbox__input base-filter" checked />
+            <span class="p-checkbox__label" id="label-{{ base_ }}">{{ base }}</span>
+          </label>
+        {% endfor %}
+      </div>
+      <div>
+        Architectures:
+        {%- for arch in architectures %}
+          <label class="p-checkbox--inline">
+            <input type="checkbox" id="{{ arch }}" name="{{ arch }}-filter" value="{{ arch }}" aria-labelledby="label-{{ arch }}" class="p-checkbox__input arch-filter" checked />
+            <span class="p-checkbox__label" id="label-{{ arch }}">{{ arch }}</span>
+          </label>
+        {% endfor %}
+      </div>
+      <div>
+        Attributes:
+        <label class="p-checkbox--inline">
+          <input type="checkbox" id="input-only-binary-charms" name="only-binary-charms" aria-labelledby="label-only-binary-charms" class="p-checkbox__input" />
+          <span class="p-checkbox__label" id="label-only-binary-charms">Only binary charms</span>
+        </label>
+        <label class="p-checkbox--inline">
+          <input type="checkbox" id="input-show-revision" name="show-revision" aria-labelledby="label-show-revision" class="p-checkbox__input" />
+          <span class="p-checkbox__label" id="label-show-revision">Show Revision</span>
+        </label>
+      </div>
+      </form>
+      <table aria-label="Charms {{ project_group }} {{ track }}">
         <thead>
           <tr>
             <th aria-sort="none">Charm</th>
@@ -20,15 +56,34 @@
         <tbody>
           {%- for charm, risks in charms|dictsort %}
             <tr>
-              <td>{{ charm }}</td>
+              <td id="{{ charm }}"><a href="#{{ charm }}">{{ charm }}</a></td>
               {%- for risk in ['edge', 'beta', 'candidate', 'stable'] %}
                 <td>
                   {% if risk in risks %}
-                    <ul class="p-list">
+                    {#-
+                    if there is more than revision number published in the same channel (track/risk)
+                    we can assume this is a binary charm which from a single source code produced multiple artifacts.
+                    #}
+                    {% set revisions = [] %}
+                    {% for channel_def in risks[risk] %}
+                      {%- if channel_def %}
+                        {{ revisions.append(channel_def.revision.revision) or  ""}}
+                      {%- endif %}
+                    {% endfor %}
+                    {% set is_binary_charm = revisions|unique|list|length > 1 %}
+                    {% set is_source_charm = revisions|unique|list|length == 1 %}
+                    <ul class="p-list {{ 'binary-charm' if is_binary_charm }} {{ 'source-charm' if is_source_charm }}">
                       {%- for channel_def in risks[risk] %}
                         {%- if channel_def %}
-                          <li class="p-list__item">
-                            {{ channel_def.revision.revision }} ({{ channel_def['channel']['base']['channel'] }}/{{ channel_def['channel']['base']['architecture'] }})
+                          <li class="p-list__item p-tooltip arch-{{ channel_def['channel']['base']['architecture'] }} base-{{ channel_def['channel']['base']['channel']|replace('.', '-') }}"
+                              aria-described-by="label-{{ charm }}-{{ channel_def.revision.revision }}">
+                              <span class="p-tooltip__message" role="tooltip" id="label-{{ charm }}-{{ channel_def.revision.revision }}">{{ channel_def.revision['created-at'] }}</span>
+                            {%- if channel_def.revision.version and channel_def.revision.version != channel_def.revision.revision|string %}
+                              {{channel_def.revision.version }} <span class="charm-revision" hidden>({{ channel_def.revision.revision }})</span>
+                            {%- else %}
+                              {{ channel_def.revision.revision }}
+                            {% endif %}
+                            ({{ channel_def['channel']['base']['channel'] }}/{{ channel_def['channel']['base']['architecture'] }})
                           </li>
                         {%- else %}
                           -
@@ -53,5 +108,20 @@
       </nav>
     </footer>
   </div>
+  <script>
+   var arch_checkboxes = $( "input:checkbox.arch-filter" ).click(function() {
+     $(".arch-" + $(this).attr("value")).toggle(this.checked);
+   });
+   var base_checkboxes = $( "input:checkbox.base-filter" ).click(function() {
+     $(".base-" + $(this).attr("value")).toggle(this.checked);
+   });
+   var binary_charms_checkbox = $( "#input-only-binary-charms" ).click(function() {
+     $(".source-charm").parent().parent().toggle(! this.checked);
+   });
+   $( "#input-show-revision" ).click(function() {
+     $(".charm-revision").toggle(this.checked);
+   });
+
+</script>
 </body>
 </html>

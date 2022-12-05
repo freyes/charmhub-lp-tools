@@ -1,0 +1,28 @@
+<header id="navigation" class="p-navigation">
+  <div class="p-navigation__row">
+    <div class="p-navigation__banner">
+      <div class="p-navigation__tagged-logo">
+        <a class="p-navigation__link" href="#">
+          <div class="p-navigation__logo-tag">
+            <img class="p-navigation__logo-icon" src="https://assets.ubuntu.com/v1/82818827-CoF_white.svg" alt="">
+          </div>
+          <span class="p-navigation__logo-title">Charmed OpenStack</span>
+        </a>
+      </div>
+      <a href="#navigation" class="p-navigation__toggle--open" title="menu">Menu</a>
+      <a href="#navigation-closed" class="p-navigation__toggle--close" title="close menu">Close menu</a>
+    </div>
+
+    <nav class="p-navigation__nav" aria-label="Tracks">
+      <ul class="p-navigation__items">
+        {% for pg, tracks in tracks_index|dictsort %}
+          {% for t in tracks %}
+            <li class="p-navigation__item {{ "is-selected" if pg == project_group and track == t}}">
+              <a class="p-navigation__link" href="#">{{ pg }} {{ track }}</a>
+            </li>
+          {% endfor %}
+        {% endfor %}
+      </ul>
+    </nav>
+  </div>
+</header>
