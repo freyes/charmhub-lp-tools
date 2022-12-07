@@ -27,10 +27,13 @@ import lazr.restfulclient.errors
 import requests
 import requests_cache
 
+from requests.exceptions import JSONDecodeError
 from tenacity import (
     Retrying,
+    retry,
     retry_if_exception_type,
     stop_after_attempt,
+    wait_exponential,
     wait_fixed,
 )
 
@@ -128,6 +131,10 @@ class CharmChannel:
         return self._raw_charm_info
 
     @property
+    @retry(wait=wait_exponential(multiplier=1, min=4, max=10),
+           retry=retry_if_exception_type(JSONDecodeError),
+           reraise=True,
+           stop=stop_after_attempt(10))
     def channel_map(self):
         return self.raw_charm_info.json()['channel-map']
 
