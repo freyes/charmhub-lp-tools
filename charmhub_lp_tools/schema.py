@@ -71,6 +71,13 @@ config_schema = Schema({
                 Optional("upload", default=True): bool,
                 Optional("recipe-name",
                          default='{project}.{branch}.{track}'): str,
+                Optional("milestones", default={}): {
+                    str: {
+                        Optional("date-targeted"): str,
+                        Optional("summary"): str,
+                        Optional("active", default=True): bool,
+                    },
+                },
             },
         },
     },
@@ -107,6 +114,13 @@ config_schema = Schema({
                 Optional("upload", default=True): bool,
                 Optional("recipe-name",
                          default='{project}.{branch}.{track}'): str,
+                Optional("milestones", default={}): {
+                    str: {
+                        Optional("date-targeted"): str,
+                        Optional("summary"): str,
+                        Optional("active", default=True): bool,
+                    },
+                },
             },
         },
     }],
